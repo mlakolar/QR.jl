@@ -16,6 +16,11 @@ noiseType = int(ARGS[4])
 # random seed
 srand(rep)
 
+# generate data
+p = 1500
+n = 1000
+s = 10
+
 if corType == 1
   # equal correlation
   Sigma = 0.8 * ones(p,p) + 0.2 * eye(p)
@@ -41,14 +46,12 @@ elseif corType == 3
       Sigma[b,a] = t
     end
   end
+else
+  error("Not implemented")
 end
 
 sqSigma = sqrtm(Sigma)
 
-# generate data
-p = 1500
-n = 1000
-s = 10
 beta = linspace(1., 0.5, s)
 X = randn(n, p) * sqSigma
 tX = hcat(ones(n), X)
@@ -57,6 +60,8 @@ if noiseType == 1
 elseif noiseType == 2
   tdist = TDist(1)
   errTerm = rand(tdist, n)
+else
+  error("Not implemented")
 end
 
 Y = X[:,1:s] * beta + noiseType
