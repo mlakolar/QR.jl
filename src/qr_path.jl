@@ -68,9 +68,15 @@ Y = X[:,1:s] * beta + noiseType
 
 # save("$(outDir)/data_rep_$(rep)_cor_$(corType)_noise_$(noiseType).jld", "X", X, "Y", Y, "s", s, "beta", beta)
 
-lambdaArr = logspace(-1.7, -2.3, 50)
+lambdaArr = logspace(0, -1, 5)
 tauArr = [0.1:0.02:0.9]
-sol_qr_path = QR.qr_path(tX, Y, lambdaArr, tauArr, solver)
+tauArr = [0.1:0.2:0.9]
+qr_tau_path = cell(length(tauArr))
+indTau = 0
+for tau=tauArr
+  @show indTau = indTau + 1
+  qr_tau_path[indTau] = QR.qr_path(tX, Y, lambdaArr, tau, solver)
+end
 
-save("$(outDir)/path_rep_$(rep)_cor_$(corType)_noise_$(noiseType).jld", "sol_qr_path", sol_qr_path)
+save("$(outDir)/path_rep_$(rep)_cor_$(corType)_noise_$(noiseType).jld", "qr_tau_path", qr_tau_path)
 

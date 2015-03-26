@@ -61,92 +61,68 @@ end
 #
 ######################################################################
 
-
+# refit variables are dictionaries with keys equal to support set
 type QRPath
   lambdaArr
-  tauArr
+  tau
   hBeta
-  hBetaRefit
   hXi
-  hXiRefit
   optval
-  optvalRefit
 end
 
 # assumes that the first row of X is equal to all ones
 # lambdaArr is in decreasing order
 # tauArr is ordered
 # these requirements are not strict, however, it may be useful for
-function qr_path(X, Y, lambdaArr, tauArr, solver)
+function qr_path(X::Array{Float64, 2}, Y::Array{Float64, 2},
+                 lambdaArr::Array{Float64, 1}, tauArr::Float64,
+                 solver::AbstractMathProgSolve; max_hat_s=Inf, zero_thr=1e-4)
+
   n, p = size(X)
-  varX = vec(mapslices(norm, X, 1))
+  varX = vec(mapslices(norm, X, 1)) / sqrt(n)
   varX[1] = 0.
 
   insBeta = zeros(Float64, p)
   insXi = zeros(Float64, n)
 
+  _lambdaArr = copy(lambdaArr)
   numLambda  = length(lambdaArr)
-  numTau = length(tauArr)
-  hBeta = cell(numLambda, numTau)
-  hBetaRefit = cell(numLambda, numTau)
-  hXi = cell(numLambda, numTau)
-  hXiRefit = cell(numLambda, numTau)
-  optval = cell(numLambda, numTau)
-  optvalRefit = cell(numLambda, numTau)
-
+  hBeta = cell(numLambda)
+  hXi = cell(numLambda)
+  optval = cell(numLambda)
 
   qr_problem = QRProblem(solver, X, Y)
-  forwardTau = 1
+
   for indLambda=1:numLambda
     @show "$(indLambda)/$(numLambda)"
-    if forwardTau == 1
-      tauRange = 1:numTau
-    else
-      tauRange = numTau:-1:1
-    end
-    for indTau=tauRange
-      tmpBeta, tmpXi = solve!(qr_problem, lambdaArr[indLambda] * sqrt(tauArr[indTau]*(1-tauArr[indTau])) * varX, tauArr[indTau])
+    tmpBeta, tmpXi = solve!(qr_problem, lambdaArr[indLambda] * sqrt(tau*(1-tau)) * varX, tau)
 
-      fill!(insBeta, 0.)
-      for kv=tmpBeta
+    fill!(insBeta, 0.)
+    for kv=tmpBeta
+      if abs(kv[2]) > zero_thr
         insBeta[kv[1]] = kv[2]
       end
-      hBeta[indLambda, indTau] = sparse(insBeta)
-
-      fill!(insXi, 0.)
-      for kv=tmpXi
-        insXi[kv[1]] = kv[2]
-      end
-      hXi[indLambda, indTau] = sparse(insXi)
-
-      optval[indLambda, indTau] = JuMP.getObjectiveValue(qr_problem.problem)
-
-      # refit
-      indNonZero = find(abs(insBeta) .> 1e-4)
-      hat_s = length(indNonZero)
-      refit_problem = QRProblem(solver, X[:, indNonZero], Y)
-      tmpBeta, tmpXi = solve!(refit_problem, zeros(Float64, hat_s), tauArr[indTau])
-
-      fill!(insXi, 0.)
-      for kv=tmpXi
-        insXi[kv[1]] = kv[2]
-      end
-      hXiRefit[indLambda, indTau] = sparse(insXi)
-
-      insBetaR = Array(Float64, hat_s)
-      for i=1:hat_s
-        insBetaR[i] = tmpBeta[i]
-      end
-      hBetaRefit[indLambda, indTau] = sparsevec(indNonZero, insBetaR)
-
-      optvalRefit[indLambda, indTau] = JuMP.getObjectiveValue(refit_problem.problem)
-
-
     end
-    forwardTau = 1 - forwardTau
+    hBeta[indLambda] = sparse(insBeta)
+
+    fill!(insXi, 0.)
+    for kv=tmpXi
+      insXi[kv[1]] = kv[2]
+    end
+    hXi[indLambda, indTau] = sparse(insXi)
+
+    optval[indLambda] = JuMP.getObjectiveValue(qr_problem.problem)
+
+    if nnz(hBeta[indLambda]) > max_hat_s
+      _lambdaArr = lambdaArr[1:indLambda-1]
+      hBeta = hBeta[1:indLambda-1]
+      hXi = hXi[1:indLambda-1]
+      optval = optval[1:indLambda-1]
+      break
+    end
   end
 
-  QRPath(lambdaArr, tauArr, hBeta, hBetaRefit, hXi, hXiRefit, optval, optvalRefit)
+  QRPath(_lambdaArr, tau, hBeta, hXi, optval)
 end
 
 
