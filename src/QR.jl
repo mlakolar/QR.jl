@@ -2,11 +2,13 @@ module QR
 
 import Mosek
 import JuMP
+using MathProgBase.SolverInterface
 
 export
   QRProblem,
-  solve,
-  qr_path
+  solve!,
+  compute_qr_path!,
+  compute_qr_path_refit!
 
 ######################################################################
 #
@@ -16,6 +18,7 @@ export
 
 type QRProblem
   problem::JuMP.Model
+  intercept
   beta
   t         # p variables -- penalty
   up        # n variables
@@ -24,25 +27,28 @@ type QRProblem
   n::Int64
   p::Int64
 
-  function QRProblem(solver, X, Y, simplex=true)
+  function QRProblem(solver::AbstractMathProgSolver, X::Array{Float64, 2}, Y::Array{Float64, 1})
     n, p = size(X)
+    stdX = vec(mapslices(norm, X, 1)) / sqrt(n)
+
     problem = JuMP.Model(solver=solver)
 
+    @JuMP.defVar(problem, intercept)
     @JuMP.defVar(problem, beta[1:p])
     @JuMP.defVar(problem, t[1:p])
     @JuMP.defVar(problem, up[1:n])
     @JuMP.defVar(problem, un[1:n])
-    @JuMP.addConstraint(problem, xi_dual[i=1:n], Y[i] - dot(vec(X[i,:]), beta) == up[i] - un[i])
+    @JuMP.addConstraint(problem, xi_dual[i=1:n], Y[i] - intercept - dot(vec(X[i,:]), beta) == up[i] - un[i])
     for i=1:n
         @JuMP.addConstraint(problem, up[i] >= 0)
         @JuMP.addConstraint(problem, un[i] >= 0)
     end
     for i=1:p
-        @JuMP.addConstraint(problem, -beta[i] <= t[i])
-        @JuMP.addConstraint(problem, beta[i] <= t[i])
+        @JuMP.addConstraint(problem, -stdX[i] * beta[i] <= t[i])
+        @JuMP.addConstraint(problem, stdX[i] * beta[i] <= t[i])
     end
 
-    new(problem, beta, t, up, un, xi_dual, n, p)
+    new(problem, intercept, beta, t, up, un, xi_dual, n, p)
   end
 
 end
@@ -52,7 +58,28 @@ function solve!(qr_problem::QRProblem, lambda::Array{Float64, 1}, tau::Float64)
   @JuMP.setObjective(qr_problem.problem, Min, (tau*dot(oneN, qr_problem.up) + (1-tau)*dot(oneN, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t))
 
   JuMP.solve(qr_problem.problem)
-  JuMP.getValue(qr_problem.beta), JuMP.getDual(qr_problem.xi_dual)
+  nothing
+end
+
+function getBeta(qr_problem::QRProblem; zero_thr=1e-4)
+  tmpBeta = zeros(Float64, qr_problem.p)
+
+  for kv=JuMP.getValue(qr_problem.beta)
+    if abs(kv[2]) > zero_thr
+      tmpBeta[kv[1]] = kv[2]
+    end
+  end
+  JuMP.getValue(qr_problem.intercept), sparse(tmpBeta)
+end
+
+
+function getXi(qr_problem::QRProblem)
+  tmpXi = zeros(Float64, qr_problem.n, 1)
+
+  for kv=JuMP.getDual(qr_problem.xi_dual)
+    tmpXi[kv[1]] = kv[2]
+  end
+  tmpXi
 end
 
 ######################################################################
@@ -65,64 +92,80 @@ end
 type QRPath
   lambdaArr
   tau
-  hBeta
-  hXi
+  intercept
+  beta
+  xi
   optval
 end
 
 # assumes that the first row of X is equal to all ones
 # lambdaArr is in decreasing order
-# tauArr is ordered
 # these requirements are not strict, however, it may be useful for
-function qr_path(X::Array{Float64, 2}, Y::Array{Float64, 2},
-                 lambdaArr::Array{Float64, 1}, tauArr::Float64,
-                 solver::AbstractMathProgSolve; max_hat_s=Inf, zero_thr=1e-4)
+function compute_qr_path!(qr_problem::QRProblem,
+                          lambdaArr::Array{Float64, 1}, tau::Float64;
+                          max_hat_s=Inf, zero_thr=1e-4)
 
-  n, p = size(X)
-  varX = vec(mapslices(norm, X, 1)) / sqrt(n)
-  varX[1] = 0.
-
-  insBeta = zeros(Float64, p)
-  insXi = zeros(Float64, n)
+  p = qr_problem.p
+  n = qr_problem.n
 
   _lambdaArr = copy(lambdaArr)
   numLambda  = length(lambdaArr)
-  hBeta = cell(numLambda)
-  hXi = cell(numLambda)
-  optval = cell(numLambda)
-
-  qr_problem = QRProblem(solver, X, Y)
+  intercept = Array(Float64, numLambda)
+  beta = cell(numLambda)
+  xi = Array(Float64, numLambda, n)
+  optval = Array(Float64, numLambda)
 
   for indLambda=1:numLambda
-    @show "$(indLambda)/$(numLambda)"
-    tmpBeta, tmpXi = solve!(qr_problem, lambdaArr[indLambda] * sqrt(tau*(1-tau)) * varX, tau)
-
-    fill!(insBeta, 0.)
-    for kv=tmpBeta
-      if abs(kv[2]) > zero_thr
-        insBeta[kv[1]] = kv[2]
-      end
+    if mod(indLambda, 10) == 1
+      print("Solving $(indLambda)/$(numLambda)")
     end
-    hBeta[indLambda] = sparse(insBeta)
+    solve!(qr_problem, lambdaArr[indLambda] * ones(p), tau)
 
-    fill!(insXi, 0.)
-    for kv=tmpXi
-      insXi[kv[1]] = kv[2]
+    intercept[indLambda], beta[indLambda] = getBeta(qr_problem; zero_thr=zero_thr)
+    if mod(indLambda, 10) == 1
+      println("    nnz ==  $(nnz(beta[indLambda]))")
     end
-    hXi[indLambda, indTau] = sparse(insXi)
-
+    xi[indLambda, :] = getXi(qr_problem)
     optval[indLambda] = JuMP.getObjectiveValue(qr_problem.problem)
 
-    if nnz(hBeta[indLambda]) > max_hat_s
+    if nnz(beta[indLambda]) > max_hat_s
       _lambdaArr = lambdaArr[1:indLambda-1]
-      hBeta = hBeta[1:indLambda-1]
-      hXi = hXi[1:indLambda-1]
+      beta = beta[1:indLambda-1]
+      xi = xi[1:indLambda-1, :]
       optval = optval[1:indLambda-1]
       break
     end
   end
 
-  QRPath(_lambdaArr, tau, hBeta, hXi, optval)
+  QRPath(_lambdaArr, tau, intercept, beta, xi, optval)
+end
+
+
+type QRRefit
+  intercept
+  beta
+  xi
+end
+
+function compute_qr_path_refit!(qr_problem::QRProblem, qr_path::QRPath; zero_thr=1e-4)
+  tau = qr_path.tau
+  lambda = fill(1.e6, qr_problem.p)
+  lambdaArr = qr_path.lambdaArr
+
+  tmpDict = Dict()
+  for i=1:length(lambdaArr)
+    support_nz = find(qr_path.beta[i])
+    if haskey(tmpDict, support_nz)
+      continue
+    end
+    fill!(lambda, 1.e6)
+    lambda[support_nz] = 0.
+    solve!(qr_problem, lambda, tau)
+    _intercept, _beta = getBeta(qr_problem; zero_thr=zero_thr)
+    _xi = getXi(qr_problem)
+    tmpDict[support_nz] = QRRefit(_intercept, _beta, _xi)
+  end
+  tmpDict
 end
 
 
