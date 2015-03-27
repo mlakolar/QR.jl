@@ -1,7 +1,7 @@
 #input args :: outputDir rep correlationType noiseType
 
 using HDF5, JLD
-using QR, HD
+using Distributions
 
 # input arguments
 outDir = ARGS[1]
