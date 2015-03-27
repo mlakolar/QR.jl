@@ -28,8 +28,8 @@ solver = MosekSolver(LOG=0,
 qr_problem = QRProblem(solver, X, Y)
 
 # solves penalized quantile regression
-lambdaArr = linspace(0.4, 0.0, 100)
-tauArr = [0.3:0.02:0.7]
+lambdaArr = logspace(log10(0.4), log10(0.05), 30)
+tauArr = [0.1:0.02:0.9]
 qr_tau_path = cell(length(tauArr))
 indTau = 0
 for tau=tauArr
@@ -49,7 +49,7 @@ for tau=tauArr
   qr_refit_tau_path[indTau] = compute_qr_path_refit!(qr_problem, qr_tau_path[indTau])
 end
 
-lambdaArr = linspace(0.8, 0.05, 100)
+lambdaArr = logspace(log10(0.8), log10(0.1), 30)
 # inverts XX for debiasing
 println("Inverting rows")
 lasso_var_path = cell(2*s)

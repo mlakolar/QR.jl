@@ -13,13 +13,14 @@ noiseType = int(ARGS[4])
 srand(rep)
 
 # generate data
-p = 100
+p = 1500
 n = 1000
-s = 5
+s = 10
 
 if corType == 1
   # equal correlation
-  Sigma = 0.5 * ones(p,p) + 0.2 * eye(p)
+  rho = 0.5
+  Sigma = full(blkdiag(sparse(rho * ones(s+5,s+5) + (1-rho) * eye(s+5)), speye(p-s-5)))
 elseif corType == 2
   # toeplitz
   rho = 0.8
