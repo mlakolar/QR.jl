@@ -13,9 +13,9 @@ noiseType = int(ARGS[4])
 srand(rep)
 
 # generate data
-p = 1500
+p = 100
 n = 1000
-s = 10
+s = 5
 
 if corType == 1
   # equal correlation

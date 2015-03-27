@@ -20,6 +20,8 @@ Y = data["Y"]
 s = data["s"]
 beta = data["beta"]
 
+n, p = size(X)
+
 solver = MosekSolver(LOG=0,
                      OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
                      PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
@@ -27,7 +29,7 @@ qr_problem = QRProblem(solver, X, Y)
 
 # solves penalized quantile regression
 lambdaArr = linspace(0.4, 0.0, 100)
-tauArr = [0.1:0.02:0.9]
+tauArr = [0.3:0.02:0.7]
 qr_tau_path = cell(length(tauArr))
 indTau = 0
 for tau=tauArr
