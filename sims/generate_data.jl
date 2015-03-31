@@ -57,6 +57,9 @@ if noiseType == 1
 elseif noiseType == 2
   tdist = TDist(1)
   errTerm = rand(tdist, n)
+elseif noiseType == 3
+  tdist = TDist(3)
+  errTerm = rand(tdist, n)
 else
   error("Not implemented")
 end
