@@ -8,7 +8,7 @@ using MathProgBase.SolverInterface
 export
   QRProblem,
   solve!,
-  getBeta, getBeta!
+  getBeta, getBeta!,
   getXi, getXi!,
   compute_qr_path!,
   compute_qr_path_refit!
@@ -63,7 +63,7 @@ function solve!(
     lambda::Array{Float64, 1},
     tau::Float64
     )
-
+  @assert 0. < tau < 1.
   oneN = qr_problem.oneN
   @JuMP.setObjective(qr_problem.problem,
                      Min,
@@ -75,7 +75,7 @@ function solve!(
 end
 
 function getBeta!(tmpBeta::Vector{Float64}, qr_problem::QRProblem; zero_thr=1e-4)
-  @assert length(xi) == qr_problem.n
+  @assert length(tmpBeta) == qr_problem.p
   for kv=JuMP.getValue(qr_problem.beta)
     if abs(kv[2]) > zero_thr
       tmpBeta[kv[1]] = kv[2]

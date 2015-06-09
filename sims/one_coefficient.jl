@@ -1,9 +1,10 @@
+addprocs(15);
+
 @everywhere using HDF5, JLD
 @everywhere using Distributions
 @everywhere using QR
 @everywhere using Gurobi
 @everywhere using CDLasso
-
 
 @everywhere function generate_data(
     rep;
@@ -130,12 +131,28 @@ end
 
   # debiased
   hb = ebeta_refit[j] + dot(gamma_refit, gradient) * spF / n
-  eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2 / n
+  eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2
 
   hb, eSigma, spF, (hb - true_beta[j]) / eSigma
 end
 
-addprocs(15);
 
-res = pmap(estimCoeff, [1, 2])
 
+
+numTests = 200
+res = pmap(estimCoeff, [1:numTests])
+
+ores = zeros(numTests)
+for i=1:numTests
+  ores[i] = res[i][3]
+end
+
+plt.hist(ores, min(30,numTests))
+
+qq = qqbuild(ores, Normal())
+scatter(qq.qx, qq.qy)
+ax = gca()
+ax[:set_ylim]([-3.5, 3.5])
+ax[:set_xlim]([-3.5, 3.5])
+xx=-3.5:0.01:3.5
+plot(xx,xx, color="red")
