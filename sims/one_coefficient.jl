@@ -113,7 +113,7 @@ end
   solve!(qr_problem, lambda, tau + 2*h)
   a1 = getXi(qr_problem)
 
-  spF = -dot(Y, a1 - 2*a2 + a3) / 4 / (0.02*h)^2
+  spF = dot(Y, a1 - 2*a2 + a3) / 4 / h^2
 
   # gradient
   residuals = Array(Float64, n)
@@ -131,9 +131,9 @@ end
 
   # debiased
   hb = ebeta_refit[j] + dot(gamma_refit, gradient) * spF / n
-  eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2
+  eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2 / n
 
-  hb, eSigma, spF, (hb - true_beta[j]) / eSigma
+  hb, eSigma, spF, (hb - true_beta[j]) / sqrt(eSigma)
 end
 
 
@@ -144,7 +144,7 @@ res = pmap(estimCoeff, [1:numTests])
 
 ores = zeros(numTests)
 for i=1:numTests
-  ores[i] = res[i][3]
+  ores[i] = res[i][4]
 end
 
 plt.hist(ores, min(30,numTests))
