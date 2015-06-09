@@ -1,4 +1,4 @@
-addprocs(15);
+addprocs(4);
 
 @everywhere using HDF5, JLD
 @everywhere using Distributions
@@ -82,64 +82,34 @@ end
     )
 
   Y, X, true_beta, n, p, s = generate_data(rep; corType=corType, noiseType=noiseType)
+  p = 10
+  X = X[:, 1:p]
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
   qr_problem = QRProblem(solver, X, Y)
-  @time QR.solve!(qr_problem, lambdaQR, tau)
+  @time QR.solve!(qr_problem, 0., tau)
   intercept, ebeta = getBeta(qr_problem)
+  a2 = getXi(qr_problem)
 
-  A = cov(X, corrected=false, mean=0.)
-  b = zeros(Float64, p)
-  b[j] = 1.
-  gamma = zeros(p)
-  lasso!(gamma, A, b, lambdaLasso)
-
-  support_nz = find(gamma)
-  gamma_refit = zeros(p)
-  gamma_refit[support_nz] = A[support_nz, support_nz] \ b[support_nz]
-
-  # refit
-  support_nz = find(ebeta)
-  lambda = fill(1.e10, p)
-  lambda[support_nz] = 0.
-
+  lambda = fill(0., p)
   solve!(qr_problem, lambda, tau - 2*h)
   a3 = getXi(qr_problem)
-
-  solve!(qr_problem, lambda, tau)
-  a2 = getXi(qr_problem)
-  intercept, ebeta_refit = getBeta(qr_problem)
 
   solve!(qr_problem, lambda, tau + 2*h)
   a1 = getXi(qr_problem)
 
   spF = dot(Y, a1 - 2*a2 + a3) / 4 / h^2
 
-  # gradient
-  residuals = Array(Float64, n)
-  gradient = Array(Float64, p)
+  A = cov(X, corrected=false, mean=0.)
 
-  for i=1:n
-    tmp = Y[i] - intercept - dot(slice(X, i, :), ebeta_refit)
-    if tmp < 0.
-      residuals[i] = tau - 1
-    else
-      residuals[i] = tau
-    end
-  end
-  At_mul_B!(gradient, X, residuals)
+  hb = ebeta[j]
+  eSigma = inv(A)[j,j] * tau * (1 - tau) * spF^2 / n
 
-  # debiased
-  hb = ebeta_refit[j] + dot(gamma_refit, gradient) * spF / n
-  eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2 / n
-
-  @show "Done $(rep)"
-  tb = j > s ? 0. : true_beta[j]
+  tb = true_beta[j]
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
 
 numTests = 500
-res = pmap(estimCoeff, [1:numTests])
 
 # ores = zeros(numTests)
 # for i=1:numTests
@@ -169,7 +139,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_1_cor_1_var_1.jld", "res", res)
+save("oracle_noise_1_cor_1_var_1.jld", "res", res)
 res = pmap(x -> estimCoeff(
              x;
              tau = 0.5,
@@ -181,19 +151,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_1_cor_1_var_10.jld", "res", res)
-res = pmap(x -> estimCoeff(
-             x;
-             tau = 0.5,
-             j = 20,
-             lambdaQR = 0.1,
-             lambdaLasso = 0.1,
-             corType = 1,
-             noiseType = 1,
-             h = 0.06
-             ),
-           [1:numTests])
-save("noise_1_cor_1_var_20.jld", "res", res)
+save("oracle_noise_1_cor_1_var_10.jld", "res", res)
 
 ###  tau = 0.5, cor = 1, noise = 2
 
@@ -208,7 +166,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_2_cor_1_var_1.jld", "res", res)
+save("oracle_noise_2_cor_1_var_1.jld", "res", res)
 res = pmap(x -> estimCoeff(
              x;
              tau = 0.5,
@@ -220,19 +178,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_2_cor_1_var_10.jld", "res", res)
-res = pmap(x -> estimCoeff(
-             x;
-             tau = 0.5,
-             j = 20,
-             lambdaQR = 0.1,
-             lambdaLasso = 0.1,
-             corType = 1,
-             noiseType = 2,
-             h = 0.06
-             ),
-           [1:numTests])
-save("noise_2_cor_1_var_20.jld", "res", res)
+save("oracle_noise_2_cor_1_var_10.jld", "res", res)
 
 ###  tau = 0.5, cor = 3, noise = 1
 
@@ -247,7 +193,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_1_cor_3_var_1.jld", "res", res)
+save("oracle_noise_1_cor_3_var_1.jld", "res", res)
 res = pmap(x -> estimCoeff(
              x;
              tau = 0.5,
@@ -259,19 +205,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_1_cor_3_var_10.jld", "res", res)
-res = pmap(x -> estimCoeff(
-             x;
-             tau = 0.5,
-             j = 20,
-             lambdaQR = 0.1,
-             lambdaLasso = 0.1,
-             corType = 3,
-             noiseType = 1,
-             h = 0.06
-             ),
-           [1:numTests])
-save("noise_1_cor_3_var_20.jld", "res", res)
+save("oracle_noise_1_cor_3_var_10.jld", "res", res)
 
 ###  tau = 0.5, cor = 3, noise = 2
 
@@ -286,7 +220,7 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_2_cor_3_var_1.jld", "res", res)
+save("oracle_noise_2_cor_3_var_1.jld", "res", res)
 res = pmap(x -> estimCoeff(
              x;
              tau = 0.5,
@@ -298,21 +232,28 @@ res = pmap(x -> estimCoeff(
              h = 0.06
              ),
            [1:numTests])
-save("noise_2_cor_3_var_10.jld", "res", res)
-res = pmap(x -> estimCoeff(
-             x;
-             tau = 0.5,
-             j = 20,
-             lambdaQR = 0.1,
-             lambdaLasso = 0.1,
-             corType = 3,
-             noiseType = 2,
-             h = 0.06
-             ),
-           [1:numTests])
-save("noise_2_cor_3_var_20.jld", "res", res)
+save("oracle_noise_2_cor_3_var_10.jld", "res", res)
 
 
 ###################################################################################################
 ###################################################################################################
 ###################################################################################################
+
+
+
+using PyPlot
+
+res = load("oracle_noise_1_cor_1_var_1.jld", "res")
+ores = zeros(numTests)
+for i=1:numTests
+  ores[i] = res[i][4]
+end
+plt.hist(ores, min(30,numTests))
+
+qq = qqbuild(ores, Normal())
+scatter(qq.qx, qq.qy)
+ax = gca()
+ax[:set_ylim]([-3.5, 3.5])
+ax[:set_xlim]([-3.5, 3.5])
+xx=-3.5:0.01:3.5
+plot(xx,xx, color="red")
