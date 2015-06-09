@@ -8,6 +8,8 @@ using MathProgBase.SolverInterface
 export
   QRProblem,
   solve!,
+  getBeta, getBeta!
+  getXi, getXi!,
   compute_qr_path!,
   compute_qr_path_refit!
 

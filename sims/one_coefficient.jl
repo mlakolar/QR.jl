@@ -15,7 +15,7 @@
   srand(rep)
 
   # generate data
-  p = 1500
+  p = 15
   n = 1000
   s = 10
 
