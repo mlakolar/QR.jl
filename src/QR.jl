@@ -27,6 +27,7 @@ type QRProblem
   xi_dual   #
   n::Int64
   p::Int64
+  oneN::Array{Float64, 1}
 
   function QRProblem(solver::AbstractMathProgSolver, X::Array{Float64, 2}, Y::Array{Float64, 1})
     n, p = size(X)
@@ -49,38 +50,48 @@ type QRProblem
         @JuMP.addConstraint(problem, stdX[i] * beta[i] <= t[i])
     end
 
-    new(problem, intercept, beta, t, up, un, xi_dual, n, p)
+    new(problem, intercept, beta, t, up, un, xi_dual, n, p, ones(n))
   end
 end
 
-function solve!(qr_problem::QRProblem, lambda::Array{Float64, 1}, tau::Float64)
-  oneN = ones(qr_problem.n)
-  @JuMP.setObjective(qr_problem.problem, Min, (tau*dot(oneN, qr_problem.up) + (1-tau)*dot(oneN, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t))
+
+solve!(qr_problem::QRProblem, lambda::Float64, tau::Float64) = solve!(qr_problem, fill(lambda, qr_problem.p), tau)
+function solve!(
+    qr_problem::QRProblem,
+    lambda::Array{Float64, 1},
+    tau::Float64
+    )
+
+  oneN = qr_problem.oneN
+  @JuMP.setObjective(qr_problem.problem,
+                     Min,
+                     (tau*dot(oneN, qr_problem.up) + (1-tau)*dot(oneN, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t)
+                     )
 
   JuMP.solve(qr_problem.problem)
   nothing
 end
 
-function getBeta(qr_problem::QRProblem; zero_thr=1e-4)
-  tmpBeta = zeros(Float64, qr_problem.p)
-
+function getBeta!(tmpBeta::Vector{Float64}, qr_problem::QRProblem; zero_thr=1e-4)
+  @assert length(xi) == qr_problem.n
   for kv=JuMP.getValue(qr_problem.beta)
     if abs(kv[2]) > zero_thr
       tmpBeta[kv[1]] = kv[2]
     end
   end
-  JuMP.getValue(qr_problem.intercept), sparse(tmpBeta)
+  JuMP.getValue(qr_problem.intercept), tmpBeta
 end
+getBeta(qr_problem::QRProblem; zero_thr=1e-4) = getBeta!(zeros(qr_problem.p), qr_problem; zero_thr=zero_thr)
 
 
-function getXi(qr_problem::QRProblem)
-  tmpXi = zeros(Float64, qr_problem.n, 1)
-
+function getXi!(xi::Vector{Float64}, qr_problem::QRProblem)
+  @assert length(xi) == qr_problem.n
   for kv=JuMP.getDual(qr_problem.xi_dual)
-    tmpXi[kv[1]] = kv[2]
+    xi[kv[1]] = kv[2]
   end
-  tmpXi
+  xi
 end
+getXi(qr_problem::QRProblem) = getXi!(zeros(qr_problem.n), qr_problem)
 
 ######################################################################
 #
