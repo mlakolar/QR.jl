@@ -1,6 +1,7 @@
 module QR
 
-import Mosek
+# import Mosek
+# import Gurobi
 import JuMP
 using MathProgBase.SolverInterface
 
@@ -50,7 +51,6 @@ type QRProblem
 
     new(problem, intercept, beta, t, up, un, xi_dual, n, p)
   end
-
 end
 
 function solve!(qr_problem::QRProblem, lambda::Array{Float64, 1}, tau::Float64)
