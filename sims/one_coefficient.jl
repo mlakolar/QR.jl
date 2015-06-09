@@ -16,7 +16,7 @@ addprocs(15);
   srand(rep)
 
   # generate data
-  p = 15
+  p = 1500
   n = 1000
   s = 10
 
@@ -136,10 +136,7 @@ end
   hb, eSigma, spF, (hb - true_beta[j]) / sqrt(eSigma)
 end
 
-
-
-
-numTests = 200
+numTests = 500
 res = pmap(estimCoeff, [1:numTests])
 
 ores = zeros(numTests)
@@ -156,3 +153,33 @@ ax[:set_ylim]([-3.5, 3.5])
 ax[:set_xlim]([-3.5, 3.5])
 xx=-3.5:0.01:3.5
 plot(xx,xx, color="red")
+
+
+res = pmap(x -> estimCoeff(
+             x;
+             tau = 0.5,
+             j = 10,
+             lambdaQR = 0.1,
+             lambdaLasso = 0.1,
+             corType = 1,
+             noiseType = 1,
+             h = 0.06
+             ),
+           [1:numTests])
+save("noise_1_cor_1_var_10.jld", "res", res)
+
+res = pmap(x -> estimCoeff(
+             x;
+             tau = 0.5,
+             j = 20,
+             lambdaQR = 0.1,
+             lambdaLasso = 0.1,
+             corType = 1,
+             noiseType = 1,
+             h = 0.06
+             ),
+           [1:numTests])
+save("noise_1_cor_1_var_20.jld", "res", res)
+
+
+
