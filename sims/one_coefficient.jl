@@ -4,6 +4,7 @@ addprocs(15);
 @everywhere using Distributions
 @everywhere using QR
 @everywhere using Gurobi
+# @everywhere using Mosek
 @everywhere using CDLasso
 
 @everywhere function generate_data(
@@ -84,6 +85,9 @@ end
   Y, X, true_beta, n, p, s = generate_data(rep; corType=corType, noiseType=noiseType)
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
+#   solver = MosekSolver(LOG=0,
+#                        OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
+#                        PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
   qr_problem = QRProblem(solver, X, Y)
   @time QR.solve!(qr_problem, lambdaQR, tau)
   intercept, ebeta = getBeta(qr_problem)
@@ -133,7 +137,10 @@ end
   hb = ebeta_refit[j] + dot(gamma_refit, gradient) * spF / n
   eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2 / n
 
+<<<<<<< Updated upstream
   @show "Done $(rep)"
+=======
+>>>>>>> Stashed changes
   tb = j > s ? 0. : true_beta[j]
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
@@ -158,7 +165,7 @@ res = pmap(estimCoeff, [1:numTests])
 
 ###  tau = 0.5, cor = 1, noise = 1
 
-res = pmap(x -> estimCoeff(
+@time res = pmap(x -> estimCoeff(
              x;
              tau = 0.5,
              j = 1,
