@@ -61,6 +61,8 @@ addprocs(15);
     err_d = TDist(1)
   elseif noiseType == 3
     err_d = TDist(3)
+  elseif noiseType == 4
+    err_d = MixtureModel(Normal, [(0., 1.), (3., 0.4), (-3.0, 0.4)], [0.6, 0.2, 0.2])
   else
     error("Not implemented")
   end
@@ -137,10 +139,7 @@ end
   hb = ebeta_refit[j] + dot(gamma_refit, gradient) * spF / n
   eSigma = dot(gamma_refit, A * gamma_refit) * tau * (1 - tau) * spF^2 / n
 
-<<<<<<< Updated upstream
   @show "Done $(rep)"
-=======
->>>>>>> Stashed changes
   tb = j > s ? 0. : true_beta[j]
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
