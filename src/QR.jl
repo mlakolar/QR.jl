@@ -76,10 +76,9 @@ end
 
 function getBeta!(tmpBeta::Vector{Float64}, qr_problem::QRProblem; zero_thr=1e-4)
   @assert length(tmpBeta) == qr_problem.p
-  for kv=JuMP.getValue(qr_problem.beta)
-    if abs(kv[2]) > zero_thr
-      tmpBeta[kv[1]] = kv[2]
-    end
+  copy!(tmpBeta, JuMP.getValue(qr_problem.beta))
+  for i=1:qr_problem.p
+    tmpBeta[i] = abs(tmpBeta[i]) > zero_thr ? tmpBeta[i] : 0
   end
   JuMP.getValue(qr_problem.intercept), tmpBeta
 end
@@ -88,9 +87,7 @@ getBeta(qr_problem::QRProblem; zero_thr=1e-4) = getBeta!(zeros(qr_problem.p), qr
 
 function getXi!(xi::Vector{Float64}, qr_problem::QRProblem)
   @assert length(xi) == qr_problem.n
-  for kv=JuMP.getDual(qr_problem.xi_dual)
-    xi[kv[1]] = kv[2]
-  end
+  copy!(xi, JuMP.getDual(qr_problem.xi_dual))
   xi
 end
 getXi(qr_problem::QRProblem) = getXi!(zeros(qr_problem.n), qr_problem)
@@ -111,9 +108,7 @@ type QRPath
   optval
 end
 
-# assumes that the first row of X is equal to all ones
 # lambdaArr is in decreasing order
-# these requirements are not strict, however, it may be useful for
 function compute_qr_path!(qr_problem::QRProblem,
                           lambdaArr::Array{Float64, 1}, tau::Float64;
                           max_hat_s=Inf, zero_thr=1e-4)
@@ -136,12 +131,12 @@ function compute_qr_path!(qr_problem::QRProblem,
 
     intercept[indLambda], beta[indLambda] = getBeta(qr_problem; zero_thr=zero_thr)
     if mod(indLambda, 10) == 1
-      println("    nnz ==  $(nnz(beta[indLambda]))")
+      println("    nnz ==  $(countnz(beta[indLambda]))")
     end
     xi[indLambda, :] = getXi(qr_problem)
     optval[indLambda] = JuMP.getObjectiveValue(qr_problem.problem)
 
-    if nnz(beta[indLambda]) > max_hat_s
+    if countnz(beta[indLambda]) > max_hat_s
       _lambdaArr = lambdaArr[1:indLambda-1]
       beta = beta[1:indLambda-1]
       xi = xi[1:indLambda-1, :]
