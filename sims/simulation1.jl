@@ -10,7 +10,7 @@ using JLD
 
 macro m_estimCoeff(coefIndex, corType, noiseType, numTests)
     return :(
-       res = pmap(x -> estimCoeff(
+       pmap(x -> estimCoeff(
             x;
             tau = 0.5,
             j = $coefIndex,
@@ -26,7 +26,7 @@ end
 
 macro m_estimCoeffOracle(coefIndex, corType, noiseType, numTests)
     return :(
-       res = pmap(x -> estimCoeffOracle(
+       pmap(x -> estimCoeffOracle(
             x;
             tau = 0.5,
             j = $coefIndex,
@@ -48,10 +48,10 @@ noiseTypes = [1, 2, 4]
 for v in vars
     for c in corTypes
         for n in noiseTypes
-          if !isfile("oracle_noise_$(v)_cor_$(c)_var_$(n).jld")
+          if !isfile("oracle_noise_$(n)_cor_$(c)_var_$(v).jld")
             @show (v,c,n)
-            @m_estimCoeffOracle(v,c,n,500)
-            save("oracle_noise_$(v)_cor_$(c)_var_$(n).jld", "res", res)
+            res = @m_estimCoeffOracle(v,c,n,500)
+            save("oracle_noise_$(n)_cor_$(c)_var_$(v).jld", "res", res)
           end
         end
     end
@@ -61,10 +61,10 @@ end
 for v in vars
   for c in corTypes
     for n in noiseTypes
-      if !isfile("noise_$(v)_cor_$(c)_var_$(n).jld")
+      if !isfile("noise_$(n)_cor_$(c)_var_$(v).jld")
         @show (v,c,n)
-        @m_estimCoeff(v,c,n,500)
-        save("noise_$(v)_cor_$(c)_var_$(n).jld", "res", res)
+        res = @m_estimCoeff(v,c,n,500)
+        save("noise_$(n)_cor_$(c)_var_$(v).jld", "res", res)
       end
     end
   end
