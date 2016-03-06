@@ -148,8 +148,13 @@ function estimCoeffOracle(
     )
 
   Y, X, true_beta, n, p, s = generate_data(rep; corType=corType, noiseType=noiseType)
-  p = 10
-  X = X[:, 1:p]
+  if j > 10
+    p = 11
+    X = X[:, [1:10, j]]
+  else
+    p = 10
+    X = X[:, 1:p]
+  end
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
   qr_problem = QRProblem(solver, X, Y)
