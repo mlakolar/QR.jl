@@ -12,7 +12,7 @@ macro m_estimCoeff(coefIndex, corType, noiseType, numTests)
     return :(
        pmap(x -> estimCoeff(
             x;
-            tau = 0.5,
+            tau = 0.3,
             j = $coefIndex,
             lambdaQR = 0.1,
             lambdaLasso = 0.1,
@@ -20,7 +20,7 @@ macro m_estimCoeff(coefIndex, corType, noiseType, numTests)
             noiseType = $noiseType,
             h = 0.06
             ),
-           [1:$numTests])
+           1:$numTests)
     )
 end
 
@@ -28,30 +28,29 @@ macro m_estimCoeffOracle(coefIndex, corType, noiseType, numTests)
     return :(
        pmap(x -> estimCoeffOracle(
             x;
-            tau = 0.5,
+            tau = 0.3,
             j = $coefIndex,
-            lambdaQR = 0.1,
-            lambdaLasso = 0.1,
             corType = $corType,
             noiseType = $noiseType,
             h = 0.06
             ),
-           [1:$numTests])
+           1:$numTests)
     )
 end
 
 vars = [1, 10, 20]
 corTypes = [1, 3]
-noiseTypes = [1, 2, 4]
+noiseTypes = [1, 2]
+tauVal = 0.3
 
 ## oracle simulations
 for v in vars
     for c in corTypes
         for n in noiseTypes
-          if !isfile("oracle_noise_$(n)_cor_$(c)_var_$(v).jld")
-            @show (v,c,n)
+          if !isfile("oracle_noise_$(n)_cor_$(c)_var_$(v)_tau_$(tauVal).jld")
+            @show (v,c,n,tauVal)
             res = @m_estimCoeffOracle(v,c,n,500)
-            save("oracle_noise_$(n)_cor_$(c)_var_$(v).jld", "res", res)
+            save("oracle_noise_$(n)_cor_$(c)_var_$(v)_tau_$(tauVal).jld", "res", res)
           end
         end
     end
@@ -61,10 +60,10 @@ end
 for v in vars
   for c in corTypes
     for n in noiseTypes
-      if !isfile("noise_$(n)_cor_$(c)_var_$(v).jld")
-        @show (v,c,n)
+      if !isfile("noise_$(n)_cor_$(c)_var_$(v)_tau_$(tauVal).jld")
+        @show (v,c,n,tauVal)
         res = @m_estimCoeff(v,c,n,500)
-        save("noise_$(n)_cor_$(c)_var_$(v).jld", "res", res)
+        save("noise_$(n)_cor_$(c)_var_$(v)_tau_$(tauVal).jld", "res", res)
       end
     end
   end

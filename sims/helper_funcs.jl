@@ -83,7 +83,7 @@ function estimCoeff(
 #                        OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
 #                        PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
   qr_problem = QRProblem(solver, X, Y)
-  @time QR.solve!(qr_problem, lambdaQR, tau)
+  QR.solve!(qr_problem, lambdaQR, tau)
   intercept, ebeta = getBeta(qr_problem)
 
   A = cov(X, corrected=false, mean=0.)
@@ -140,8 +140,6 @@ function estimCoeffOracle(
     rep;
     tau = 0.5,
     j = 1,
-    lambdaQR = 0.1,
-    lambdaLasso = 0.1,
     corType = 1,
     noiseType = 1,
     h = 0.06
@@ -150,7 +148,7 @@ function estimCoeffOracle(
   Y, X, true_beta, n, p, s = generate_data(rep; corType=corType, noiseType=noiseType)
   if j > 10
     p = 11
-    X = X[:, [1:10, j]]
+    X = X[:, [1:10; j]]
   else
     p = 10
     X = X[:, 1:p]
@@ -158,7 +156,7 @@ function estimCoeffOracle(
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
   qr_problem = QRProblem(solver, X, Y)
-  @time QR.solve!(qr_problem, 0., tau)
+  QR.solve!(qr_problem, 0., tau)
   intercept, ebeta = getBeta(qr_problem)
   a2 = getXi(qr_problem)
 
@@ -173,10 +171,16 @@ function estimCoeffOracle(
 
   A = cov(X, corrected=false, mean=0.)
 
+  if j > 10
+    j = 11
+    tb = 0 
+  else
+    tb = true_beta[j]
+  end
+  
   hb = ebeta[j]
   eSigma = inv(A)[j,j] * tau * (1 - tau) * spF^2 / n
-
-  tb = true_beta[j]
+  
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
 
