@@ -173,21 +173,20 @@ function estimCoeffOracle(
 
   if j > 10
     j = 11
-    tb = 0 
+    tb = 0
   else
     tb = true_beta[j]
   end
-  
+
   hb = ebeta[j]
   eSigma = inv(A)[j,j] * tau * (1 - tau) * spF^2 / n
-  
+
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
 
 function estimSparsityFunctionOracle(
     rep;
     tauArray = 0.2:0.01:0.8,
-    lambdaQR = 0.1,
     corType = 1,
     noiseType = 1,
     h = 0.06
