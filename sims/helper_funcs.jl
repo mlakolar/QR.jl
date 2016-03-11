@@ -173,14 +173,14 @@ function estimCoeffOracle(
 
   if j > 10
     j = 11
-    tb = 0 
+    tb = 0
   else
     tb = true_beta[j]
   end
-  
+
   hb = ebeta[j]
   eSigma = inv(A)[j,j] * tau * (1 - tau) * spF^2 / n
-  
+
   hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
 end
 
