@@ -64,6 +64,73 @@ function generate_data(
   Y, X, beta, n, p, s
 end
 
+function generate_data_power(
+    rep;
+    beta1 = 1,
+    corType = 1,
+    noiseType = 1
+    )
+
+  # random seed
+  srand(rep)
+
+  # generate data
+  p = 1500
+  n = 1000
+  s = 10
+
+  if corType == 1
+    # equal correlation
+    rho = 0.5
+    Sigma = full(blkdiag(sparse(rho * ones(s+5,s+5) + (1-rho) * eye(s+5)), speye(p-s-5)))
+  elseif corType == 2
+    # toeplitz
+    rho = 0.8
+    Sigma = zeros(Float64, p,p)
+    for a=1:p
+      for b=a:p
+        t = rho^abs(a-b)
+        Sigma[a,b] = t
+        Sigma[b,a] = t
+      end
+    end
+  elseif corType == 3
+    # toeplitz
+    rho = 0.1
+    Sigma = zeros(Float64, p,p)
+    for a=1:p
+      for b=a:p
+        t = rho^abs(a-b)
+        Sigma[a,b] = t
+        Sigma[b,a] = t
+      end
+    end
+  else
+    error("Not implemented")
+  end
+  sqSigma = sqrtm(Sigma)
+
+  beta = collect(linspace(1., 0.5, s))
+  beta[1] = beta1
+
+  X = randn(n, p) * sqSigma
+  if noiseType == 1
+    err_d = Normal()
+  elseif noiseType == 2
+    err_d = TDist(1)
+  elseif noiseType == 3
+    err_d = TDist(3)
+  elseif noiseType == 4
+    err_d = MixtureModel(Normal, [(0., 1.), (3., 0.4), (-3.0, 0.4)], [0.6, 0.2, 0.2])
+  else
+    error("Not implemented")
+  end
+  errTerm = rand(err_d, n)
+  Y = X[:,1:s] * beta + errTerm
+
+  Y, X, beta, n, p, s
+end
+
 
 function estimCoeff(
     rep;
@@ -217,4 +284,57 @@ function estimSparsityFunctionOracle(
     spF[indTau] = dot(Y, a1 - 2*a2 + a3) / 4 / h^2
   end
   spF
+end
+
+function createPowerCurve(
+  rep;
+  corType = 1,
+  noiseType = 1,
+  beta1 = 0.:0.01:1.,
+  h = 0.06
+  )
+
+  solver = GurobiSolver(Method=1, OutputFlag=0)
+  # solver = MosekSolver(LOG=0,
+  #                      OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
+  #                      PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
+  numBeta = length(beta1)
+  res = zeros(4, numBeta)
+  # hb, eSigma, spF, (hb - tb) / sqrt(eSigma)
+
+  for indBeta = 1:numBeta
+    if mod(indBeta, 10) == 0
+        @show indBeta
+    end
+    tb = beta1[indBeta]
+    Y, X, true_beta, n, p, s = generate_data_power(rep*1000+indBeta; beta1=tb, corType=corType, noiseType=noiseType)
+    p = 10
+    X = X[:, 1:p]
+    lambda = fill(0., p)
+
+    qr_problem = QRProblem(solver, X, Y)
+    QR.solve!(qr_problem, 0., tau)
+
+    intercept, ebeta = getBeta(qr_problem)
+    a2 = getXi(qr_problem)
+
+    solve!(qr_problem, lambda, tau - 2*h)
+    a3 = getXi(qr_problem)
+
+    solve!(qr_problem, lambda, tau + 2*h)
+    a1 = getXi(qr_problem)
+
+    spF = dot(Y, a1 - 2*a2 + a3) / 4 / h^2
+
+    A = cov(X, corrected=false, mean=0.)
+    hb = ebeta[1]
+    eSigma = inv(A)[1,1] * tau * (1 - tau) * spF^2 / n
+
+    res[1, indBeta] = hb
+    res[2, indBeta] = eSigma
+    res[3, indBeta] = spF
+    res[4, indBeta] = (hb - tb) / sqrt(eSigma)
+  end
+
+  res
 end

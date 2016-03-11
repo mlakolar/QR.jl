@@ -13,57 +13,79 @@ function createTableElem(inFile)
 
 end
 
-fileDir = "/home/mkolar/tmp/qr_sim1_tau_0.5"
-plotParams = Array(Any, 24)
-plotParams[1] = "$(fileDir)/noise_1_cor_1_var_1.jld"
-plotParams[2] = "$(fileDir)/oracle_noise_1_cor_1_var_1.jld"
-plotParams[3] = "$(fileDir)/noise_1_cor_1_var_10.jld"
-plotParams[4] = "$(fileDir)/oracle_noise_1_cor_1_var_10.jld"
-plotParams[5] = "$(fileDir)/noise_1_cor_1_var_20.jld"
-plotParams[6] = "$(fileDir)/oracle_noise_1_cor_1_var_20.jld"
-
-plotParams[7] = "$(fileDir)/noise_1_cor_3_var_1.jld"
-plotParams[8] = "$(fileDir)/oracle_noise_1_cor_3_var_1.jld"
-plotParams[9] = "$(fileDir)/noise_1_cor_3_var_10.jld"
-plotParams[10] = "$(fileDir)/oracle_noise_1_cor_3_var_10.jld"
-plotParams[11] = "$(fileDir)/noise_1_cor_3_var_20.jld"
-plotParams[12] = "$(fileDir)/oracle_noise_1_cor_3_var_20.jld"
-
-####  Equicorrelation, Tdist
-plotParams[13] = "$(fileDir)/noise_2_cor_1_var_1.jld"
-plotParams[14] = "$(fileDir)/oracle_noise_2_cor_1_var_1.jld"
-plotParams[15] = "$(fileDir)/noise_2_cor_1_var_10.jld"
-plotParams[16] = "$(fileDir)/oracle_noise_2_cor_1_var_10.jld"
-plotParams[17] = "$(fileDir)/noise_2_cor_1_var_20.jld"
-plotParams[18] = "$(fileDir)/oracle_noise_2_cor_1_var_20.jld"
-
-####  Toeplitz, Tdist
-plotParams[19] = "$(fileDir)/noise_2_cor_3_var_1.jld"
-plotParams[20] = "$(fileDir)/oracle_noise_2_cor_3_var_1.jld"
-plotParams[21] = "$(fileDir)/noise_2_cor_3_var_10.jld"
-plotParams[22] = "$(fileDir)/oracle_noise_2_cor_3_var_10.jld"
-plotParams[23] = "$(fileDir)/noise_2_cor_3_var_20.jld"
-plotParams[24] = "$(fileDir)/oracle_noise_2_cor_3_var_20.jld"
+fileDirArr = Array(Any, 3)
+fileDirArr[1] = "/home/mkolar/tmp/qr_sim1_tau_0.3"
+fileDirArr[2] = "/home/mkolar/tmp/qr_sim1_tau_0.5"
+fileDirArr[3] = "/home/mkolar/tmp/qr_sim1_tau_0.6"
 
 latexStr = ""
 rowName = ["EQ, \$N(0,1)\$", "Toeplitz, \$N(0,1)\$", "EQ, \$t_1\$", "Toeplitz, \$t_1\$"]
-for r=1:4
-  latexStr = string(latexStr, rowName[r], " ")
-  for c=1:3
-    latexStr = string(latexStr, createTableElem(plotParams[(r-1)*6+(c-1)*2+1]))
+
+for fNameInd=1:3
+
+  fileDir = fileDirArr[fNameInd]
+
+  plotParams = Array(Any, 24)
+  if fNameInd == 2
+    append = ""
+  elseif fNameInd == 1
+    append = "_tau_0.3"
+  else
+    append = "_tau_0.6"
   end
-  latexStr = string(latexStr, "\\\\\n")
-end
 
-latexStr = string(latexStr, "\n\n")
+  plotParams[1] = "$(fileDir)/noise_1_cor_1_var_1$(append).jld"
+  plotParams[2] = "$(fileDir)/oracle_noise_1_cor_1_var_1$(append).jld"
+  plotParams[3] = "$(fileDir)/noise_1_cor_1_var_10$(append).jld"
+  plotParams[4] = "$(fileDir)/oracle_noise_1_cor_1_var_10$(append).jld"
+  plotParams[5] = "$(fileDir)/noise_1_cor_1_var_20$(append).jld"
+  plotParams[6] = "$(fileDir)/oracle_noise_1_cor_1_var_20$(append).jld"
 
-for r=1:4
-  latexStr = string(latexStr, rowName[r], " ")
-  for c=1:3
-    latexStr = string(latexStr, createTableElem(plotParams[(r-1)*6+(c-1)*2+2]))
+  plotParams[7] = "$(fileDir)/noise_1_cor_3_var_1$(append).jld"
+  plotParams[8] = "$(fileDir)/oracle_noise_1_cor_3_var_1$(append).jld"
+  plotParams[9] = "$(fileDir)/noise_1_cor_3_var_10$(append).jld"
+  plotParams[10] = "$(fileDir)/oracle_noise_1_cor_3_var_10$(append).jld"
+  plotParams[11] = "$(fileDir)/noise_1_cor_3_var_20$(append).jld"
+  plotParams[12] = "$(fileDir)/oracle_noise_1_cor_3_var_20$(append).jld"
+
+  ####  Equicorrelation, Tdist
+  plotParams[13] = "$(fileDir)/noise_2_cor_1_var_1$(append).jld"
+  plotParams[14] = "$(fileDir)/oracle_noise_2_cor_1_var_1$(append).jld"
+  plotParams[15] = "$(fileDir)/noise_2_cor_1_var_10$(append).jld"
+  plotParams[16] = "$(fileDir)/oracle_noise_2_cor_1_var_10$(append).jld"
+  plotParams[17] = "$(fileDir)/noise_2_cor_1_var_20$(append).jld"
+  plotParams[18] = "$(fileDir)/oracle_noise_2_cor_1_var_20$(append).jld"
+
+  ####  Toeplitz, Tdist
+  plotParams[19] = "$(fileDir)/noise_2_cor_3_var_1$(append).jld"
+  plotParams[20] = "$(fileDir)/oracle_noise_2_cor_3_var_1$(append).jld"
+  plotParams[21] = "$(fileDir)/noise_2_cor_3_var_10$(append).jld"
+  plotParams[22] = "$(fileDir)/oracle_noise_2_cor_3_var_10$(append).jld"
+  plotParams[23] = "$(fileDir)/noise_2_cor_3_var_20$(append).jld"
+  plotParams[24] = "$(fileDir)/oracle_noise_2_cor_3_var_20$(append).jld"
+
+  for r=1:4
+    latexStr = string(latexStr, rowName[r], " ")
+    for c=1:3
+      latexStr = string(latexStr, createTableElem(plotParams[(r-1)*6+(c-1)*2+1]))
+    end
+    latexStr = string(latexStr, "\\\\\n")
   end
-  latexStr = string(latexStr, "\\\\\n")
-end
 
+  latexStr = string(latexStr, "\n\n")
+
+  for r=1:4
+    latexStr = string(latexStr, rowName[r], " ")
+    for c=1:3
+      latexStr = string(latexStr, createTableElem(plotParams[(r-1)*6+(c-1)*2+2]))
+    end
+    latexStr = string(latexStr, "\\\\\n")
+  end
+
+  latexStr = string(latexStr, "\n\n")
+  latexStr = string(latexStr, "\n\n")
+  latexStr = string(latexStr, "\n\n")
+
+end
 
 print(latexStr)

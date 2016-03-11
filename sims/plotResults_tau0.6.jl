@@ -16,6 +16,7 @@ function createFigure(
   stdTest =  [res[i][4] for i=1:numRep]
   plt[:hist](stdTest, 50, normed=true)
   xlim(xlimA)
+  ylim([0, 0.6])
   d = Normal()
   x = linspace(xlimA[1], xlimA[2], 500)
   y = pdf(d, x)

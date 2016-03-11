@@ -6,6 +6,7 @@ function createFigure(
     inFile,
     outFile,
     xlimA,
+    ylimA,
     titleText,
     ylabelText,
     )
@@ -16,6 +17,7 @@ function createFigure(
   stdTest =  [res[i][4] for i=1:numRep]
   plt[:hist](stdTest, 50, normed=true)
   xlim(xlimA)
+  ylim(ylimA)
   d = Normal()
   x = linspace(xlimA[1], xlimA[2], 500)
   y = pdf(d, x)
@@ -31,6 +33,7 @@ fileDir = "/home/mkolar/tmp/qr_sim1_tau_0.5"
 true_beta = collect(linspace(1., 0.5, 10))
 
 xlimA = [-4, 4]
+ylimA = [0, 0.6]
 
 plotParams = Array(Any, 24)
 
@@ -215,10 +218,10 @@ plotParams[24] = [
 ]
 
 
-for i=13:24
+for i=1:24
   inFile = plotParams[i][1]
   outFile = plotParams[i][2]
   titleText = plotParams[i][3]
   ylabelText = plotParams[i][4]
-  createFigure(inFile,outFile,xlimA,titleText,ylabelText)
+  createFigure(inFile,outFile,xlimA,ylimA,titleText,ylabelText)
 end
