@@ -3,6 +3,7 @@ addprocs(15);
 using JLD
 @everywhere using Distributions
 @everywhere using QR
+# @everywhere using Mosek
 @everywhere using Gurobi
 @everywhere using CDLasso
 
@@ -29,8 +30,8 @@ for h in hArr
     for c in corTypes
         for n in noiseTypes
           if !isfile("spf_noise_$(n)_cor_$(c)_h_$(h).jld")
-            @show (v,c,n,tauVal)
-            @time res = @m_estimCoeffOracle(v,c,n,500)
+            @show (h,c,n)
+            @time res = @m_estimCoeffOracle(h,c,n,200)
             save("spf_noise_$(n)_cor_$(c)_h_$(h).jld", "res", res)
           end
         end

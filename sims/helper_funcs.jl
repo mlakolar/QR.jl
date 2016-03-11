@@ -79,9 +79,9 @@ function estimCoeff(
   Y, X, true_beta, n, p, s = generate_data(rep; corType=corType, noiseType=noiseType)
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
-#   solver = MosekSolver(LOG=0,
-#                        OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
-#                        PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
+  # solver = MosekSolver(LOG=0,
+  #                      OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
+  #                      PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
   qr_problem = QRProblem(solver, X, Y)
   QR.solve!(qr_problem, lambdaQR, tau)
   intercept, ebeta = getBeta(qr_problem)
@@ -187,7 +187,6 @@ end
 function estimSparsityFunctionOracle(
     rep;
     tauArray = 0.2:0.01:0.8,
-    lambdaQR = 0.1,
     corType = 1,
     noiseType = 1,
     h = 0.06
@@ -199,6 +198,10 @@ function estimSparsityFunctionOracle(
   lambda = fill(0., p)
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
+  # solver = MosekSolver(LOG=0,
+  #                      OPTIMIZER=MSK_OPTIMIZER_FREE_SIMPLEX,
+  #                      PRESOLVE_USE=MSK_PRESOLVE_MODE_OFF)
+
   qr_problem = QRProblem(solver, X, Y)
 
   spF = zeros(length(tauArray))
