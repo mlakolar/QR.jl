@@ -291,7 +291,8 @@ function createPowerCurve(
   corType = 1,
   noiseType = 1,
   beta1 = 0.:0.01:1.,
-  h = 0.06
+  h = 0.06,
+  tau = 0.5
   )
 
   solver = GurobiSolver(Method=1, OutputFlag=0)
