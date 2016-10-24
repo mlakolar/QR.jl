@@ -1,14 +1,14 @@
 using FactCheck
 
 using QR
-using Convex, Gurobi
+using Convex, Mosek
 
-# cvx_solver = MosekSolver(LOG=0,OPTIMIZER=Mosek.MSK_OPTIMIZER_FREE_SIMPLEX)
-cvx_solver = GurobiSolver(Method=1, OutputFlag=0)
+cvx_solver = MosekSolver(LOG=0,OPTIMIZER=Mosek.MSK_OPTIMIZER_FREE_SIMPLEX)
+# cvx_solver = GurobiSolver(Method=1, OutputFlag=0)
 set_default_solver(cvx_solver)
 
-# solver = MosekSolver(LOG=0,OPTIMIZER=Mosek.MSK_OPTIMIZER_FREE_SIMPLEX)
-solver = GurobiSolver(Method=1, OutputFlag=0)
+solver = MosekSolver(LOG=0,OPTIMIZER=Mosek.MSK_OPTIMIZER_FREE_SIMPLEX)
+# solver = GurobiSolver(Method=1, OutputFlag=0)
 
 function qr_primal_cvx(X, Y, lambda, tau)
   n, p = size(X)
