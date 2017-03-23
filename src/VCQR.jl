@@ -35,11 +35,10 @@ type QRProblem
     n, p = size(X)
     h=n^(-1/3)
 ## for loop
-    stdX = zeros(n)
-    for i = 1:n
-    stdX[i]=sqrt(mean(1/2/pi*exp(-(T-t0/h).^2/2)/h*(X[i,:].^2))
+    stdX = zeros(p)
+    for i = 1:p
+    	stdX[i]=sqrt(mean(1/2/pi*exp(-(T-t0/h).^2/2)/h*(X[:,i].^2))
     end
-    #stdX = vec(mapslices(norm, X, 1)) / sqrt(n) #### sigma_hat: change to kernel sum
 
     problem = JuMP.Model(solver=solver)
 
@@ -73,7 +72,6 @@ function solve!(
   oneN = qr_problem.oneN
   @JuMP.setObjective(qr_problem.problem,
                      Min,
-#                     (tau*dot(oneN, qr_problem.up) + (1-tau)*dot(oneN, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t)            #### Add kernel here
 (tau*dot(1/2/pi*exp(-(T-t0/h).^2/2)/h, qr_problem.up) + (1-tau)*dot(1/2/pi*exp(-(T-t0/h).^2/2)/h, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t)
                      )
 
