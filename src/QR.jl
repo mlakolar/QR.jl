@@ -37,19 +37,19 @@ type QRProblem
 
     problem = JuMP.Model(solver=solver)
 
-    @JuMP.defVar(problem, intercept)
-    @JuMP.defVar(problem, beta[1:p])
-    @JuMP.defVar(problem, t[1:p])
-    @JuMP.defVar(problem, up[1:n])
-    @JuMP.defVar(problem, un[1:n])
-    @JuMP.addConstraint(problem, xi_dual[i=1:n], Y[i] - intercept - dot(vec(X[i,:]), beta) == up[i] - un[i])
+    @JuMP.variable(problem, intercept)
+    @JuMP.variable(problem, beta[1:p])
+    @JuMP.variable(problem, t[1:p])
+    @JuMP.variable(problem, up[1:n])
+    @JuMP.variable(problem, un[1:n])
+    @JuMP.constraint(problem, xi_dual[i=1:n], Y[i] - intercept - dot(vec(X[i,:]), beta) == up[i] - un[i])
     for i=1:n
-        @JuMP.addConstraint(problem, up[i] >= 0)
-        @JuMP.addConstraint(problem, un[i] >= 0)
+        @JuMP.constraint(problem, up[i] >= 0)
+        @JuMP.constraint(problem, un[i] >= 0)
     end
     for i=1:p
-        @JuMP.addConstraint(problem, -stdX[i] * beta[i] <= t[i])
-        @JuMP.addConstraint(problem, stdX[i] * beta[i] <= t[i])
+        @JuMP.constraint(problem, -stdX[i] * beta[i] <= t[i])
+        @JuMP.constraint(problem, stdX[i] * beta[i] <= t[i])
     end
 
     new(problem, intercept, beta, t, up, un, xi_dual, n, p, ones(n))
@@ -65,7 +65,7 @@ function solve!(
     )
   @assert 0. < tau < 1.
   oneN = qr_problem.oneN
-  @JuMP.setObjective(qr_problem.problem,
+  @JuMP.objective(qr_problem.problem,
                      Min,
                      (tau*dot(oneN, qr_problem.up) + (1-tau)*dot(oneN, qr_problem.un)) / qr_problem.n + dot(lambda, qr_problem.t)
                      )
@@ -76,18 +76,18 @@ end
 
 function getBeta!(tmpBeta::Vector{Float64}, qr_problem::QRProblem; zero_thr=1e-4)
   @assert length(tmpBeta) == qr_problem.p
-  copy!(tmpBeta, JuMP.getValue(qr_problem.beta))
+  copy!(tmpBeta, JuMP.getvalue(qr_problem.beta))
   for i=1:qr_problem.p
     tmpBeta[i] = abs(tmpBeta[i]) > zero_thr ? tmpBeta[i] : 0
   end
-  JuMP.getValue(qr_problem.intercept), tmpBeta
+  JuMP.getvalue(qr_problem.intercept), tmpBeta
 end
 getBeta(qr_problem::QRProblem; zero_thr=1e-4) = getBeta!(zeros(qr_problem.p), qr_problem; zero_thr=zero_thr)
 
 
 function getXi!(xi::Vector{Float64}, qr_problem::QRProblem)
   @assert length(xi) == qr_problem.n
-  copy!(xi, JuMP.getDual(qr_problem.xi_dual))
+  copy!(xi, JuMP.getdual(qr_problem.xi_dual))
   xi
 end
 getXi(qr_problem::QRProblem) = getXi!(zeros(qr_problem.n), qr_problem)
@@ -119,7 +119,7 @@ function compute_qr_path!(qr_problem::QRProblem,
   _lambdaArr = copy(lambdaArr)
   numLambda  = length(lambdaArr)
   intercept = Array(Float64, numLambda)
-  beta = cell(numLambda)
+  beta = Array{Any}(numLambda)
   xi = Array(Float64, numLambda, n)
   optval = Array(Float64, numLambda)
 
@@ -134,7 +134,7 @@ function compute_qr_path!(qr_problem::QRProblem,
       println("    nnz ==  $(countnz(beta[indLambda]))")
     end
     xi[indLambda, :] = getXi(qr_problem)
-    optval[indLambda] = JuMP.getObjectiveValue(qr_problem.problem)
+    optval[indLambda] = JuMP.getobjectivevalue(qr_problem.problem)
 
     if countnz(beta[indLambda]) > max_hat_s
       _lambdaArr = lambdaArr[1:indLambda-1]
