@@ -40,7 +40,7 @@ facts("path") do
   qr_prob = QRProblem(solver, X, Y)
 
   for indTau=1:length(tauArr)
-    sol_qr_path = QR.compute_qr_path!(qr_prob, lambdaArr, tauArr[indTau])
+    sol_qr_path = QR.compute_qr_path!(qr_prob, lambdaArr, tauArr[indTau], std_col)
 
     for indLambda=1:length(lambdaArr)
       lambda = lambdaArr[indLambda] * std_col
